@@ -1,0 +1,12 @@
+schema_version: "1"
+active_profile: local
+default_template: default
+default_harness_config: gemini
+hub:
+    enabled: true
+    linked: true
+    endpoint: https://hub.demo.scion-ai.dev/
+    grove_id: 4d85d2ba-33f4-481c-9397-0035fe8ede30
+cli:
+    autohelp: true
+workspace_path: /home/jasondel/dev/jasondel-argolis-property

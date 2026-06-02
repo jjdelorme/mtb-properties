@@ -1,0 +1,4 @@
+detached: null
+agent_instructions: agents.md
+system_prompt: system.md
+default_harness_config: gemini

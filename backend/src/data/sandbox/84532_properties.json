@@ -1,0 +1,62 @@
+[
+  {
+    "id": "prop_moab_1",
+    "formattedAddress": "55 Slickrock Rd, Moab, UT 84532",
+    "price": 690000,
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "squareFootage": 1800,
+    "propertyType": "Single Family",
+    "latitude": 38.5655,
+    "longitude": -109.5222,
+    "status": "Active"
+  },
+  {
+    "id": "prop_moab_2",
+    "formattedAddress": "412 Sand Flats Rd, Moab, UT 84532",
+    "price": 899000,
+    "bedrooms": 4,
+    "bathrooms": 3,
+    "squareFootage": 2500,
+    "propertyType": "Single Family",
+    "latitude": 38.5721,
+    "longitude": -109.5315,
+    "status": "Active"
+  },
+  {
+    "id": "prop_moab_3",
+    "formattedAddress": "120 Pipeview Ln, Moab, UT 84532",
+    "price": 540000,
+    "bedrooms": 2,
+    "bathrooms": 2,
+    "squareFootage": 1250,
+    "propertyType": "Townhouse",
+    "latitude": 38.5412,
+    "longitude": -109.5492,
+    "status": "Active"
+  },
+  {
+    "id": "prop_moab_4",
+    "formattedAddress": "880 Amasa Back Way, Moab, UT 84532",
+    "price": 1150000,
+    "bedrooms": 4,
+    "bathrooms": 3.5,
+    "squareFootage": 3100,
+    "propertyType": "Single Family",
+    "latitude": 38.5234,
+    "longitude": -109.6012,
+    "status": "Active"
+  },
+  {
+    "id": "prop_moab_5",
+    "formattedAddress": "23 South Main St Apt C, Moab, UT 84532",
+    "price": 425000,
+    "bedrooms": 1,
+    "bathrooms": 1,
+    "squareFootage": 850,
+    "propertyType": "Condo",
+    "latitude": 38.5734,
+    "longitude": -109.5505,
+    "status": "Active"
+  }
+]

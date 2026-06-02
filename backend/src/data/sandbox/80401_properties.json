@@ -1,0 +1,74 @@
+[
+  {
+    "id": "prop_golden_1",
+    "formattedAddress": "101 Apex Trail Way, Golden, CO 80401",
+    "price": 850000,
+    "bedrooms": 3,
+    "bathrooms": 2.5,
+    "squareFootage": 2100,
+    "propertyType": "Single Family",
+    "latitude": 39.7163,
+    "longitude": -105.2295,
+    "status": "Active"
+  },
+  {
+    "id": "prop_golden_2",
+    "formattedAddress": "450 Lookout Mountain Rd, Golden, CO 80401",
+    "price": 1250000,
+    "bedrooms": 4,
+    "bathrooms": 4,
+    "squareFootage": 3400,
+    "propertyType": "Single Family",
+    "latitude": 39.7423,
+    "longitude": -105.2405,
+    "status": "Active"
+  },
+  {
+    "id": "prop_golden_3",
+    "formattedAddress": "1804 North Table Mountain Dr, Golden, CO 80401",
+    "price": 680000,
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "squareFootage": 1750,
+    "propertyType": "Townhouse",
+    "latitude": 39.7752,
+    "longitude": -105.2155,
+    "status": "Active"
+  },
+  {
+    "id": "prop_golden_4",
+    "formattedAddress": "711 Chimney Gulch Dr, Golden, CO 80401",
+    "price": 950000,
+    "bedrooms": 3,
+    "bathrooms": 3,
+    "squareFootage": 2300,
+    "propertyType": "Single Family",
+    "latitude": 39.7511,
+    "longitude": -105.2345,
+    "status": "Active"
+  },
+  {
+    "id": "prop_golden_5",
+    "formattedAddress": "920 Washington Ave Apt 3B, Golden, CO 80401",
+    "price": 495000,
+    "bedrooms": 2,
+    "bathrooms": 2,
+    "squareFootage": 1100,
+    "propertyType": "Condo",
+    "latitude": 39.7562,
+    "longitude": -105.2215,
+    "status": "Active"
+  },
+  {
+    "id": "prop_golden_6",
+    "formattedAddress": "2300 Ford St, Golden, CO 80401",
+    "price": 720000,
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "squareFootage": 1600,
+    "propertyType": "Single Family",
+    "latitude": 39.7495,
+    "longitude": -105.2158,
+    "status": "Active"
+  }
+]

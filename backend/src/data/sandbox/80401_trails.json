@@ -1,0 +1,50 @@
+[
+  {
+    "id": "way_golden_trail_1",
+    "name": "Apex Trail",
+    "coordinates": [
+      {"latitude": 39.7161, "longitude": -105.2301},
+      {"latitude": 39.7170, "longitude": -105.2350},
+      {"latitude": 39.7185, "longitude": -105.2410}
+    ],
+    "difficulty": "advanced",
+    "highway": "path",
+    "rawTags": { "mtb:scale": "3", "name": "Apex Trail" }
+  },
+  {
+    "id": "way_golden_trail_2",
+    "name": "Chimney Gulch",
+    "coordinates": [
+      {"latitude": 39.7510, "longitude": -105.2350},
+      {"latitude": 39.7490, "longitude": -105.2420},
+      {"latitude": 39.7420, "longitude": -105.2450}
+    ],
+    "difficulty": "advanced",
+    "highway": "path",
+    "rawTags": { "mtb:scale": "3", "name": "Chimney Gulch" }
+  },
+  {
+    "id": "way_golden_trail_3",
+    "name": "North Table Mountain Loop",
+    "coordinates": [
+      {"latitude": 39.7750, "longitude": -105.2160},
+      {"latitude": 39.7800, "longitude": -105.2100},
+      {"latitude": 39.7820, "longitude": -105.2050}
+    ],
+    "difficulty": "easy",
+    "highway": "track",
+    "rawTags": { "mtb:scale": "1", "name": "North Table Mountain Loop" }
+  },
+  {
+    "id": "way_golden_trail_4",
+    "name": "Clear Creek Bike Path",
+    "coordinates": [
+      {"latitude": 39.7560, "longitude": -105.2210},
+      {"latitude": 39.7540, "longitude": -105.2150},
+      {"latitude": 39.7520, "longitude": -105.2050}
+    ],
+    "difficulty": "easy",
+    "highway": "cycleway",
+    "rawTags": { "name": "Clear Creek Bike Path" }
+  }
+]

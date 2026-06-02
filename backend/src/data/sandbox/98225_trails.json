@@ -1,0 +1,49 @@
+[
+  {
+    "id": "way_bellingham_trail_1",
+    "name": "SST (Galbraith)",
+    "coordinates": [
+      {"latitude": 48.7180, "longitude": -122.4200},
+      {"latitude": 48.7160, "longitude": -122.4180},
+      {"latitude": 48.7140, "longitude": -122.4160}
+    ],
+    "difficulty": "advanced",
+    "highway": "path",
+    "rawTags": { "mtb:scale": "3", "name": "SST" }
+  },
+  {
+    "id": "way_bellingham_trail_2",
+    "name": "Unemployment Line",
+    "coordinates": [
+      {"latitude": 48.7190, "longitude": -122.4220},
+      {"latitude": 48.7210, "longitude": -122.4250},
+      {"latitude": 48.7230, "longitude": -122.4280}
+    ],
+    "difficulty": "intermediate",
+    "highway": "path",
+    "rawTags": { "mtb:scale": "2", "name": "Unemployment Line" }
+  },
+  {
+    "id": "way_bellingham_trail_3",
+    "name": "Ridge Trail",
+    "coordinates": [
+      {"latitude": 48.7150, "longitude": -122.4550},
+      {"latitude": 48.7130, "longitude": -122.4520}
+    ],
+    "difficulty": "easy",
+    "highway": "path",
+    "rawTags": { "mtb:scale": "1", "name": "Ridge Trail" }
+  },
+  {
+    "id": "way_bellingham_trail_4",
+    "name": "Interurban Trail",
+    "coordinates": [
+      {"latitude": 48.7300, "longitude": -122.5000},
+      {"latitude": 48.7100, "longitude": -122.4900},
+      {"latitude": 48.6900, "longitude": -122.4800}
+    ],
+    "difficulty": "easy",
+    "highway": "track",
+    "rawTags": { "name": "Interurban Trail" }
+  }
+]

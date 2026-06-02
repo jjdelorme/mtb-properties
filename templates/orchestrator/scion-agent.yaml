@@ -1,0 +1,5 @@
+schema_version: "1"
+description: "Orchestrator for managing multi-agent teams and workflows."
+agent_instructions: agents.md
+system_prompt: system.md
+default_harness_config: gemini

@@ -1,0 +1,62 @@
+[
+  {
+    "id": "prop_bellingham_1",
+    "formattedAddress": "1200 Galbraith Mountain Rd, Bellingham, WA 98225",
+    "price": 795000,
+    "bedrooms": 3,
+    "bathrooms": 2.5,
+    "squareFootage": 2200,
+    "propertyType": "Single Family",
+    "latitude": 48.7185,
+    "longitude": -122.4215,
+    "status": "Active"
+  },
+  {
+    "id": "prop_bellingham_2",
+    "formattedAddress": "845 Whatcom Falls Way, Bellingham, WA 98225",
+    "price": 645000,
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "squareFootage": 1650,
+    "propertyType": "Single Family",
+    "latitude": 48.7392,
+    "longitude": -122.4312,
+    "status": "Active"
+  },
+  {
+    "id": "prop_bellingham_3",
+    "formattedAddress": "310 Boulevard Park Ln Apt 402, Bellingham, WA 98225",
+    "price": 525000,
+    "bedrooms": 2,
+    "bathrooms": 2,
+    "squareFootage": 1150,
+    "propertyType": "Condo",
+    "latitude": 48.7302,
+    "longitude": -122.5015,
+    "status": "Active"
+  },
+  {
+    "id": "prop_bellingham_4",
+    "formattedAddress": "2204 Samish Way, Bellingham, WA 98225",
+    "price": 890000,
+    "bedrooms": 4,
+    "bathrooms": 3,
+    "squareFootage": 2600,
+    "propertyType": "Single Family",
+    "latitude": 48.7155,
+    "longitude": -122.4585,
+    "status": "Active"
+  },
+  {
+    "id": "prop_bellingham_5",
+    "formattedAddress": "1815 Chuckanut Dr, Bellingham, WA 98225",
+    "price": 1450000,
+    "bedrooms": 4,
+    "bathrooms": 4,
+    "squareFootage": 3800,
+    "propertyType": "Single Family",
+    "latitude": 48.6902,
+    "longitude": -122.4915,
+    "status": "Active"
+  }
+]

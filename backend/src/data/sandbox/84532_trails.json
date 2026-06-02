@@ -1,0 +1,49 @@
+[
+  {
+    "id": "way_moab_trail_1",
+    "name": "Slickrock Bike Trail",
+    "coordinates": [
+      {"latitude": 38.5645, "longitude": -109.5210},
+      {"latitude": 38.5630, "longitude": -109.5150},
+      {"latitude": 38.5600, "longitude": -109.5100}
+    ],
+    "difficulty": "expert",
+    "highway": "path",
+    "rawTags": { "mtb:scale": "5", "name": "Slickrock Bike Trail" }
+  },
+  {
+    "id": "way_moab_trail_2",
+    "name": "Pipe Dream Trail",
+    "coordinates": [
+      {"latitude": 38.5420, "longitude": -109.5480},
+      {"latitude": 38.5450, "longitude": -109.5440},
+      {"latitude": 38.5500, "longitude": -109.5410}
+    ],
+    "difficulty": "advanced",
+    "highway": "path",
+    "rawTags": { "mtb:scale": "3", "name": "Pipe Dream Trail" }
+  },
+  {
+    "id": "way_moab_trail_3",
+    "name": "Amasa Back",
+    "coordinates": [
+      {"latitude": 38.5240, "longitude": -109.6000},
+      {"latitude": 38.5280, "longitude": -109.6040},
+      {"latitude": 38.5320, "longitude": -109.6080}
+    ],
+    "difficulty": "advanced",
+    "highway": "track",
+    "rawTags": { "mtb:scale": "3", "name": "Amasa Back" }
+  },
+  {
+    "id": "way_moab_trail_4",
+    "name": "Bar M Loop",
+    "coordinates": [
+      {"latitude": 38.6750, "longitude": -109.6800},
+      {"latitude": 38.6800, "longitude": -109.6750}
+    ],
+    "difficulty": "easy",
+    "highway": "track",
+    "rawTags": { "mtb:scale": "1", "name": "Bar M Loop" }
+  }
+]
