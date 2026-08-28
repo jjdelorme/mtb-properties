@@ -5,3 +5,12 @@ dist/
 .env
 *.env
 .ssh/
+
+# Caches and runtime artifacts
+.cache/
+**/.cache/
+__pycache__/
+*.pyc
+backend/data/cache/
+.playwright-mcp/
+*.png
