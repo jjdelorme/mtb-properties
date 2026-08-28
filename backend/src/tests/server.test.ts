@@ -31,7 +31,27 @@ describe('Server Endpoints', () => {
       expect(res.body).toEqual({ error: "Search query 'q' is required." });
     });
 
-    it('should return 200 and sandbox data for Golden ZIP (80401) without calling axios', async () => {
+    it('should return 200 and sandbox data for Golden ZIP (80401) without calling Nominatim or RentCast axios', async () => {
+      const mockOverpassResponse = {
+        elements: [
+          {
+            type: 'way',
+            id: 12345,
+            geometry: [
+              { lat: 39.7555, lon: -105.2211 },
+              { lat: 39.7565, lon: -105.2221 }
+            ],
+            tags: {
+              name: 'Golden Mountain Trail',
+              highway: 'path',
+              'mtb:scale': '1'
+            }
+          }
+        ]
+      };
+      
+      mockedAxios.post.mockResolvedValueOnce({ data: mockOverpassResponse, status: 200 });
+
       const res = await request(app).get('/api/search?q=80401');
       expect(res.status).toBe(200);
       expect(res.body.source).toBe('sandbox');
@@ -39,6 +59,7 @@ describe('Server Endpoints', () => {
       expect(res.body.properties.length).toBeGreaterThan(0);
       expect(res.body.trails.length).toBeGreaterThan(0);
       expect(mockedAxios.get).not.toHaveBeenCalled();
+      expect(mockedAxios.post).toHaveBeenCalledTimes(1);
     });
 
     it('should return 200 and live data for a valid non-sandbox location', async () => {

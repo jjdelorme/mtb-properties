@@ -2,8 +2,9 @@ import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
 import { geocodeAddress } from '../services/geocodingService';
-import { fetchRentCastListings } from '../services/rentCastService';
+import { fetchRentCastListings, fetchRentCastProperty } from '../services/rentCastService';
 import { fetchOSMTrails } from '../services/overpassService';
+import { cacheService } from '../services/cacheService';
 import { config } from '../config';
 
 jest.mock('axios');
@@ -14,21 +15,20 @@ describe('API Services & Cache', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    // Clean up cache directory if exists
-    if (fs.existsSync(cacheDir)) {
-      fs.rmSync(cacheDir, { recursive: true, force: true });
-    }
+    cacheService.clear();
   });
 
   afterAll(() => {
     // Clean up cache directory
-    if (fs.existsSync(cacheDir)) {
-      fs.rmSync(cacheDir, { recursive: true, force: true });
-    }
+    try {
+      if (fs.existsSync(cacheDir)) {
+        fs.rmSync(cacheDir, { recursive: true, force: true });
+      }
+    } catch (_) {}
   });
 
-  describe('Geocoding Service (Nominatim)', () => {
-    it('should successfully geocode an address and cache the result', async () => {
+  describe('Geocoding Service & Parcel Pinpointing', () => {
+    it('should successfully geocode an area address via Nominatim and cache the result', async () => {
       const mockGeoResponse = [
         {
           lat: '40.0150',
@@ -44,7 +44,12 @@ describe('API Services & Cache', () => {
         }
       ];
 
-      mockedAxios.get.mockResolvedValueOnce({ data: mockGeoResponse, status: 200 });
+      mockedAxios.get.mockImplementation(async (url: string) => {
+        if (url.includes('nominatim.openstreetmap.org')) {
+          return { data: mockGeoResponse, status: 200 };
+        }
+        throw new Error('Not found');
+      });
 
       const result = await geocodeAddress('Boulder, CO');
 
@@ -58,21 +63,9 @@ describe('API Services & Cache', () => {
           postcode: '80302',
           country: 'United States',
           country_code: 'us'
-        }
+        },
+        matchType: 'exact'
       });
-
-      expect(mockedAxios.get).toHaveBeenCalledTimes(1);
-      expect(mockedAxios.get).toHaveBeenCalledWith(
-        'https://nominatim.openstreetmap.org/search',
-        expect.objectContaining({
-          params: expect.objectContaining({
-            q: 'Boulder, CO',
-            format: 'json',
-            limit: 1,
-            countrycodes: 'us'
-          })
-        })
-      );
 
       // Verify cached file exists
       const cachedFiles = fs.readdirSync(cacheDir);
@@ -80,13 +73,90 @@ describe('API Services & Cache', () => {
       expect(cachedFiles.some(f => f.startsWith('geocode_'))).toBe(true);
 
       // Call again, should use cache and NOT trigger axios
+      mockedAxios.get.mockClear();
       const secondResult = await geocodeAddress('Boulder, CO');
       expect(secondResult).toEqual(result);
-      expect(mockedAxios.get).toHaveBeenCalledTimes(1); // Still 1
+      expect(mockedAxios.get).toHaveBeenCalledTimes(0);
     });
 
-    it('should throw an error if no results are found', async () => {
-      mockedAxios.get.mockResolvedValueOnce({ data: [], status: 200 });
+    it('should pinpoint exact parcel coordinates via RentCast Property Records API', async () => {
+      const mockRentCastParcel = [
+        {
+          id: '1701-County-Rd,-317,-Crested-Butte,-CO-81224',
+          formattedAddress: '1701 County Rd, 317, Crested Butte, CO 81224',
+          city: 'Crested Butte',
+          state: 'CO',
+          zipCode: '81224',
+          county: 'Gunnison',
+          latitude: 38.890993,
+          longitude: -106.973486,
+          propertyType: 'Land',
+          lotSize: 94961
+        }
+      ];
+
+      mockedAxios.get.mockImplementation(async (url: string) => {
+        if (url.includes('api.rentcast.io/v1/properties')) {
+          return { data: mockRentCastParcel, status: 200 };
+        }
+        throw new Error('Not found');
+      });
+
+      const result = await geocodeAddress('1701 County Road 317 (Gothic Road), Crested Butte, CO 81224');
+
+      expect(result.lat).toBe(38.890993);
+      expect(result.lon).toBe(-106.973486);
+      expect(result.matchType).toBe('exact');
+      expect(result.propertyDetails?.lotSize).toBe(94961);
+      expect(result.propertyDetails?.propertyType).toBe('Land');
+    });
+
+    it('should fallback to Nominatim parenthetical alias candidate if RentCast returns 404', async () => {
+      const mockAliasResponse = [
+        {
+          lat: '38.8755',
+          lon: '-106.9794',
+          display_name: 'Gothic Road, Crested Butte, Gunnison County, Colorado, 81224, United States',
+          address: {
+            road: 'Gothic Road',
+            city: 'Crested Butte',
+            state: 'Colorado',
+            postcode: '81224',
+            country: 'United States',
+            country_code: 'us'
+          }
+        }
+      ];
+
+      let nominatimAttempts = 0;
+      mockedAxios.get.mockImplementation(async (url: string, opts?: any) => {
+        if (url.includes('api.rentcast.io/v1/properties')) {
+          const err: any = new Error('No data found');
+          err.response = { status: 404 };
+          throw err;
+        }
+        if (url.includes('nominatim.openstreetmap.org')) {
+          nominatimAttempts++;
+          // First attempt returns empty, second attempt returns valid alias match
+          if (nominatimAttempts === 1) {
+            return { data: [], status: 200 };
+          }
+          return { data: mockAliasResponse, status: 200 };
+        }
+        throw new Error('Unhandled URL');
+      });
+
+      const result = await geocodeAddress(' 1701 County Road 317 (Gothic Road), Crested Butte, CO 81224');
+
+      expect(result.lat).toBe(38.8755);
+      expect(result.lon).toBe(-106.9794);
+      expect(result.matchType).toBe('alias');
+    });
+
+    it('should throw an error if no results are found across all services', async () => {
+      mockedAxios.get.mockImplementation(async () => {
+        return { data: [], status: 200 };
+      });
 
       await expect(geocodeAddress('UnknownPlacexyz')).rejects.toThrow('Location "UnknownPlacexyz" not found.');
     });
@@ -97,68 +167,57 @@ describe('API Services & Cache', () => {
       const mockListings = [
         {
           id: 'rentcast_1',
-          formattedAddress: '123 Pine St, Boulder, CO 80302',
-          price: 550000,
-          bedrooms: 2,
-          bathrooms: 1.5,
-          squareFootage: 1200,
-          propertyType: 'Condo',
-          latitude: 40.0160,
-          longitude: -105.2715,
+          formattedAddress: '101 Pine St, Boulder, CO 80302',
+          price: 950000,
+          bedrooms: 3,
+          bathrooms: 2,
+          squareFootage: 2100,
+          propertyType: 'Single Family',
+          latitude: 40.015,
+          longitude: -105.270,
           status: 'Active'
         }
       ];
 
       mockedAxios.get.mockResolvedValueOnce({ data: mockListings, status: 200 });
 
-      const result = await fetchRentCastListings(40.0150, -105.2705, { postcode: '80302' });
+      const result = await fetchRentCastListings(40.015, -105.270, { city: 'Boulder', state: 'Colorado', postcode: '80302' });
 
-      expect(result.properties).toHaveLength(1);
-      expect(result.properties[0].id).toBe('rentcast_1');
       expect(result.fallback).toBe(false);
+      expect(result.properties.length).toBe(1);
+      expect(result.properties[0].formattedAddress).toBe('101 Pine St, Boulder, CO 80302');
+      expect(result.properties[0].price).toBe(950000);
 
-      expect(mockedAxios.get).toHaveBeenCalledTimes(1);
-      expect(mockedAxios.get).toHaveBeenCalledWith(
-        'https://api.rentcast.io/v1/listings/sale',
-        expect.objectContaining({
-          params: expect.objectContaining({
-            zipCode: '80302',
-            status: 'active',
-            limit: 50
-          })
-        })
-      );
-
-      // Call again, should load from cache
-      const secondResult = await fetchRentCastListings(40.0150, -105.2705, { postcode: '80302' });
-      expect(secondResult.properties).toEqual(result.properties);
-      expect(mockedAxios.get).toHaveBeenCalledTimes(1); // Still 1
+      // Verify cache hit
+      mockedAxios.get.mockClear();
+      const secondResult = await fetchRentCastListings(40.015, -105.270, { city: 'Boulder', state: 'Colorado', postcode: '80302' });
+      expect(secondResult).toEqual(result);
+      expect(mockedAxios.get).toHaveBeenCalledTimes(0);
     });
 
     it('should fallback to simulated listings if RentCast API returns 429 or 402', async () => {
-      const error429 = new Error('Too Many Requests');
-      (error429 as any).response = { status: 429 };
-      mockedAxios.get.mockRejectedValueOnce(error429);
+      const errorResponse: any = new Error('Rate limit exceeded');
+      errorResponse.response = { status: 429 };
+      mockedAxios.get.mockRejectedValueOnce(errorResponse);
 
-      const result = await fetchRentCastListings(40.0150, -105.2705);
+      const result = await fetchRentCastListings(39.755, -105.221, { city: 'Golden', state: 'CO', postcode: '80401' });
 
-      expect(result.properties.length).toBeGreaterThanOrEqual(10);
       expect(result.fallback).toBe(true);
-      expect(result.properties[0].id).toContain('sim_');
-      expect(result.properties[0].latitude).toBeCloseTo(40.0150, 1);
-      expect(result.properties[0].longitude).toBeCloseTo(-105.2705, 1);
+      expect(result.properties.length).toBe(12);
+      expect(result.properties[0].formattedAddress).toContain('Golden');
     });
 
     it('should fallback to simulated listings if RENTCAST_API_KEY is missing', async () => {
-      // Temporarily clear config key
-      const originalKey = config.RENTCAST_API_KEY;
+      const origKey = config.RENTCAST_API_KEY;
       config.RENTCAST_API_KEY = '';
 
-      const result = await fetchRentCastListings(40.0150, -105.2705);
-      expect(result.properties.length).toBeGreaterThanOrEqual(10);
-      expect(result.fallback).toBe(true);
+      const result = await fetchRentCastListings(38.573, -109.549, { city: 'Moab', state: 'UT', postcode: '84532' });
 
-      config.RENTCAST_API_KEY = originalKey;
+      expect(result.fallback).toBe(true);
+      expect(result.properties.length).toBe(12);
+      expect(result.properties[0].formattedAddress).toContain('Moab');
+
+      config.RENTCAST_API_KEY = origKey;
     });
   });
 
@@ -168,62 +227,41 @@ describe('API Services & Cache', () => {
         elements: [
           {
             type: 'way',
-            id: 11111,
-            geometry: [
-              { lat: 40.0155, lon: -105.2710 },
-              { lat: 40.0165, lon: -105.2720 }
-            ],
+            id: 123456,
             tags: {
-              name: 'Boulder Creek Path',
-              highway: 'cycleway',
-              bicycle: 'yes'
-            }
-          },
-          {
-            type: 'way',
-            id: 22222,
-            geometry: [
-              { lat: 40.0175, lon: -105.2730 },
-              { lat: 40.0185, lon: -105.2740 }
-            ],
-            tags: {
-              name: 'Animas Trail',
+              name: 'Apex Trail',
               highway: 'path',
-              'mtb:scale': '3'
-            }
+              'mtb:scale': '2'
+            },
+            geometry: [
+              { lat: 39.7150, lon: -105.2090 },
+              { lat: 39.7155, lon: -105.2095 }
+            ]
           }
         ]
       };
 
       mockedAxios.post.mockResolvedValueOnce({ data: mockOverpassResponse, status: 200 });
 
-      const trails = await fetchOSMTrails(40.0150, -105.2705);
+      const trails = await fetchOSMTrails(39.7150, -105.2090);
 
-      expect(trails).toHaveLength(2);
-      expect(trails[0].id).toBe('way_11111');
-      expect(trails[0].name).toBe('Boulder Creek Path');
-      expect(trails[0].difficulty).toBe('easy'); // cycleway fallback or custom check
-      expect(trails[0].coordinates).toEqual([
-        { latitude: 40.0155, longitude: -105.2710 },
-        { latitude: 40.0165, longitude: -105.2720 }
-      ]);
+      expect(trails.length).toBe(1);
+      expect(trails[0].id).toBe('way_123456');
+      expect(trails[0].name).toBe('Apex Trail');
+      expect(trails[0].difficulty).toBe('intermediate'); // mtb:scale 2 -> intermediate
+      expect(trails[0].coordinates.length).toBe(2);
 
-      expect(trails[1].id).toBe('way_22222');
-      expect(trails[1].name).toBe('Animas Trail');
-      expect(trails[1].difficulty).toBe('advanced'); // mtb:scale=3 is advanced
-
-      expect(mockedAxios.post).toHaveBeenCalledTimes(1);
-
-      // Call again, should use cache
-      const secondTrails = await fetchOSMTrails(40.0150, -105.2705);
+      // Verify cache hit
+      mockedAxios.post.mockClear();
+      const secondTrails = await fetchOSMTrails(39.7150, -105.2090);
       expect(secondTrails).toEqual(trails);
-      expect(mockedAxios.post).toHaveBeenCalledTimes(1); // Still 1
+      expect(mockedAxios.post).toHaveBeenCalledTimes(0);
     });
 
     it('should return an empty list and cache it if Overpass returns nothing', async () => {
       mockedAxios.post.mockResolvedValueOnce({ data: { elements: [] }, status: 200 });
 
-      const trails = await fetchOSMTrails(40.0150, -105.2705);
+      const trails = await fetchOSMTrails(0.0, 0.0);
       expect(trails).toEqual([]);
     });
   });

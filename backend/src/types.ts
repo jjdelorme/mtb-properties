@@ -35,9 +35,24 @@ export interface Trail {
   difficulty: TrailDifficulty;
   highway: string;
   rawTags: Record<string, string>;
+  lengthMiles?: number;
 }
 
 export type TrailDifficulty = "easy" | "intermediate" | "advanced" | "expert" | "unknown";
+
+export interface CustomAddressAnalysis {
+  formattedAddress: string;
+  latitude: number;
+  longitude: number;
+  nearestTrail?: NearestTrailMetrics;
+  propertyType?: string;
+  lotSize?: number;
+  yearBuilt?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  squareFootage?: number;
+  matchType?: 'exact' | 'alias' | 'street' | 'area';
+}
 
 export interface SearchResponse {
   searchQuery: string;
@@ -50,4 +65,5 @@ export interface SearchResponse {
   trails: Trail[];
   source: "live" | "sandbox" | "cache" | "fallback";
   message?: string;
+  customAddress?: CustomAddressAnalysis;
 }

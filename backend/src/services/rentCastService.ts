@@ -24,9 +24,84 @@ function getStateCode(stateName?: string): string | undefined {
   return STATE_MAP[clean];
 }
 
+export interface RentCastPropertyRecord {
+  id: string;
+  formattedAddress: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  county?: string;
+  latitude: number;
+  longitude: number;
+  propertyType?: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  squareFootage?: number;
+  lotSize?: number;
+  yearBuilt?: number;
+}
+
 export interface RentCastFetchResult {
   properties: Property[];
   fallback: boolean;
+}
+
+/**
+ * Look up exact parcel/property records by address using RentCast Property Records API
+ */
+export async function fetchRentCastProperty(address: string): Promise<RentCastPropertyRecord | null> {
+  const apiKey = config.RENTCAST_API_KEY;
+  if (!apiKey || apiKey.trim() === '' || apiKey.startsWith('dummy_')) {
+    return null;
+  }
+
+  const cacheKey = `rentcast_prop_${Buffer.from(address.toLowerCase().trim()).toString('hex')}`;
+  const cached = cacheService.get<RentCastPropertyRecord>(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const response = await axios.get('https://api.rentcast.io/v1/properties', {
+      params: { address: address.trim() },
+      headers: {
+        'X-Api-Key': apiKey,
+        'Accept': 'application/json'
+      },
+      timeout: 5000
+    });
+
+    const data = response.data;
+    const record = Array.isArray(data) ? data[0] : data;
+    if (record && record.latitude && record.longitude) {
+      const parsedRecord: RentCastPropertyRecord = {
+        id: record.id || `rentcast_${Math.random().toString(36).substr(2, 9)}`,
+        formattedAddress: record.formattedAddress || address,
+        addressLine1: record.addressLine1,
+        addressLine2: record.addressLine2,
+        city: record.city,
+        state: record.state,
+        zipCode: record.zipCode,
+        county: record.county,
+        latitude: parseFloat(record.latitude),
+        longitude: parseFloat(record.longitude),
+        propertyType: record.propertyType,
+        bedrooms: record.bedrooms,
+        bathrooms: record.bathrooms,
+        squareFootage: record.squareFootage,
+        lotSize: record.lotSize,
+        yearBuilt: record.yearBuilt
+      };
+      cacheService.set(cacheKey, parsedRecord);
+      return parsedRecord;
+    }
+  } catch (err: any) {
+    // 404 is expected when RentCast doesn't have the specific address on file
+    return null;
+  }
+  return null;
 }
 
 export async function fetchRentCastListings(
@@ -44,8 +119,8 @@ export async function fetchRentCastListings(
 
   const apiKey = config.RENTCAST_API_KEY;
 
-  if (!apiKey || apiKey.trim() === '') {
-    console.warn('RentCast API key is missing. Falling back to simulated listings.');
+  if (!apiKey || apiKey.trim() === '' || apiKey.startsWith('dummy_')) {
+    console.warn('RentCast API key is missing or dummy. Falling back to simulated listings.');
     const simulated = generateSimulatedProperties(lat, lon, addressDetails);
     const result: RentCastFetchResult = { properties: simulated, fallback: true };
     cacheService.set(cacheKey, result);
