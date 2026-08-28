@@ -28,6 +28,8 @@ export interface TrailPoint {
   longitude: number;
 }
 
+export type TrailDifficulty = "easy" | "intermediate" | "advanced" | "expert" | "unknown";
+
 export interface Trail {
   id: string;                  // OSM element ID (e.g., "way/1234567")
   name: string;                // Trail name (falls back to "Unnamed Trail" if missing)
@@ -35,9 +37,22 @@ export interface Trail {
   difficulty: TrailDifficulty; // Standardized difficulty level for color rendering
   highway: string;             // OSM highway classification (e.g., "path", "track", "cycleway")
   rawTags: Record<string, string>; // Unparsed OSM tags for extensibility
+  lengthMiles?: number;        // Calculated trail length in miles
 }
 
-export type TrailDifficulty = "easy" | "intermediate" | "advanced" | "expert" | "unknown";
+export interface CustomAddressAnalysis {
+  formattedAddress: string;
+  latitude: number;
+  longitude: number;
+  nearestTrail?: NearestTrailMetrics;
+  propertyType?: string;
+  lotSize?: number;
+  yearBuilt?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  squareFootage?: number;
+  matchType?: 'exact' | 'alias' | 'street' | 'area';
+}
 
 export interface SearchResponse {
   searchQuery: string;         // The user's original query (e.g., "Golden, CO")
@@ -50,4 +65,5 @@ export interface SearchResponse {
   trails: Trail[];             // Array of nearby MTB trails
   source: "live" | "sandbox" | "cache" | "fallback"; // Highlighting current data source
   message?: string;            // Fallback warning if RentCast rate limits hit
+  customAddress?: CustomAddressAnalysis;
 }

@@ -5,7 +5,7 @@ import SearchBar from '../components/SearchBar';
 import PropertySidebar from '../components/PropertySidebar';
 import PropertyCard from '../components/PropertyCard';
 import StatusBanner from '../components/StatusBanner';
-import { Property } from '../types';
+import { Property, Trail } from '../types';
 
 describe('SearchBar Component', () => {
   it('renders input and search button', () => {
@@ -18,6 +18,8 @@ describe('SearchBar Component', () => {
         setQuery={setQuery} 
         handleSearch={handleSearch} 
         loading={false} 
+        searchType="area"
+        setSearchType={vi.fn()}
       />
     );
 
@@ -40,6 +42,8 @@ describe('SearchBar Component', () => {
         setQuery={setQuery} 
         handleSearch={handleSearch} 
         loading={false} 
+        searchType="area"
+        setSearchType={vi.fn()}
       />
     );
 
@@ -58,6 +62,8 @@ describe('SearchBar Component', () => {
         setQuery={setQuery} 
         handleSearch={handleSearch} 
         loading={true} 
+        searchType="area"
+        setSearchType={vi.fn()}
       />
     );
 
@@ -75,6 +81,8 @@ describe('SearchBar Component', () => {
         setQuery={setQuery} 
         handleSearch={handleSearch} 
         loading={false} 
+        searchType="area"
+        setSearchType={vi.fn()}
       />
     );
 
@@ -203,7 +211,48 @@ describe('PropertySidebar Component', () => {
       />
     );
 
-    expect(screen.getByText(/No properties found/i)).toBeInTheDocument();
+    expect(screen.getByText(/No listings found/i)).toBeInTheDocument();
+  });
+
+  it('switches to Trails tab and renders nearby trails with difficulty badges', () => {
+    const handleSelectProp = vi.fn();
+    const handleSelectTrail = vi.fn();
+    const mockTrails: Trail[] = [
+      {
+        id: 'way_apex',
+        name: 'Apex Trail',
+        coordinates: [
+          { latitude: 39.7161, longitude: -105.2301 },
+          { latitude: 39.7170, longitude: -105.2350 },
+        ],
+        difficulty: 'advanced',
+        highway: 'path',
+        rawTags: { 'mtb:scale': '3' },
+        lengthMiles: 1.2,
+      },
+    ];
+
+    render(
+      <PropertySidebar
+        properties={mockProperties}
+        trails={mockTrails}
+        selectedProperty={null}
+        onSelectProperty={handleSelectProp}
+        onSelectTrail={handleSelectTrail}
+      />
+    );
+
+    const trailsTab = screen.getByRole('button', { name: /Trails/i });
+    fireEvent.click(trailsTab);
+
+    expect(screen.getByText('Apex Trail')).toBeInTheDocument();
+    expect(screen.getByText('Black Diamond')).toBeInTheDocument();
+
+    const trailCard = screen.getByText('Apex Trail').closest('div');
+    if (trailCard) {
+      fireEvent.click(trailCard);
+    }
+    expect(handleSelectTrail).toHaveBeenCalledWith(mockTrails[0]);
   });
 });
 

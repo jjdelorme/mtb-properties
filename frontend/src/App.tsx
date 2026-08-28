@@ -3,7 +3,7 @@ import SearchBar from './components/SearchBar';
 import PropertySidebar from './components/PropertySidebar';
 import PropertyMap from './components/PropertyMap';
 import StatusBanner from './components/StatusBanner';
-import { Property, SearchResponse } from './types';
+import { Property, Trail, SearchResponse } from './types';
 import { Compass, AlertTriangle, ArrowLeft } from 'lucide-react';
 
 function App() {
@@ -12,6 +12,8 @@ function App() {
   const [result, setResult] = useState<SearchResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [selectedTrail, setSelectedTrail] = useState<Trail | null>(null);
+  const [searchType, setSearchType] = useState<'area' | 'address'>('area');
   const [mapCenter, setMapCenter] = useState<{ latitude: number; longitude: number }>({
     latitude: 39.7555,
     longitude: -105.2211, // Default Golden, CO
@@ -24,9 +26,10 @@ function App() {
     setLoading(true);
     setError(null);
     setSelectedProperty(null);
+    setSelectedTrail(null);
 
     try {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&type=${searchType}`);
       const data = await response.json();
       
       if (response.ok) {
@@ -51,11 +54,17 @@ function App() {
     });
   };
 
+  const handleSelectTrail = (trail: Trail | null) => {
+    setSelectedTrail(trail);
+  };
+
   const handleResetSearch = () => {
     setResult(null);
     setQuery('');
     setError(null);
     setSelectedProperty(null);
+    setSelectedTrail(null);
+    setSearchType('area');
   };
 
   // If no search results are loaded, render a full-screen landing page with SearchBar centered
@@ -89,6 +98,8 @@ function App() {
             setQuery={setQuery}
             handleSearch={handleSearch}
             loading={loading}
+            searchType={searchType}
+            setSearchType={setSearchType}
           />
 
           {error && (
@@ -132,7 +143,7 @@ function App() {
               <span>MTB Property Mapper MVP</span>
             </h1>
             <p className="text-[10px] text-emerald-100 mt-0.5 font-semibold">
-              Showing search for: <span className="underline">{result.normalizedLocation}</span>
+              Showing search for: <span className="underline">{result.normalizedLocation}</span> ({searchType === 'area' ? 'Area Listings' : 'Custom Address Proximity'})
             </p>
           </div>
         </div>
@@ -141,7 +152,7 @@ function App() {
         <form onSubmit={handleSearch} className="flex gap-2 max-w-md w-full">
           <input
             type="text"
-            placeholder="Search ZIP code or City"
+            placeholder={searchType === 'area' ? 'Search ZIP code or City' : 'Search full street address'}
             className="flex-1 border border-emerald-600 bg-emerald-800/40 text-white placeholder-emerald-200 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-emerald-400 focus:border-transparent outline-none transition-all"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -170,8 +181,12 @@ function App() {
         {/* Left Side: Property Listings Sidebar */}
         <PropertySidebar
           properties={result.properties}
+          trails={result.trails}
           selectedProperty={selectedProperty}
+          selectedTrail={selectedTrail}
           onSelectProperty={handleSelectProperty}
+          onSelectTrail={handleSelectTrail}
+          customAddress={result.customAddress}
         />
 
         {/* Right Side: Leaflet Map Container */}
@@ -181,7 +196,10 @@ function App() {
             trails={result.trails}
             center={mapCenter}
             selectedProperty={selectedProperty}
+            selectedTrail={selectedTrail}
             onSelectProperty={handleSelectProperty}
+            onSelectTrail={handleSelectTrail}
+            customAddress={result.customAddress}
           />
         </div>
       </main>
