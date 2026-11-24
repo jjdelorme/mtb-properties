@@ -45,11 +45,30 @@ export const cacheService = {
       }
       const fileContent = fs.readFileSync(filePath, 'utf8');
       const parsed = JSON.parse(fileContent);
-      if (parsed.expiry && Date.now() > parsed.expiry) {
-        // Expired, delete it
+
+      const mapping = PRELOADED_MAPPINGS[key];
+      const isExpired = parsed.expiry && Date.now() > parsed.expiry;
+      const isPolluted = mapping && (parsed.data as any)?.fallback === true;
+
+      if (isExpired || isPolluted) {
         try {
           fs.unlinkSync(filePath);
-        } catch (_) {}
+        } catch (err) {
+          console.debug(`Expected file absence when clearing cache: ${filePath}`);
+        }
+        
+        if (mapping) {
+          const preloadedPath = path.join(__dirname, '../data/sandbox', mapping.file);
+          if (fs.existsSync(preloadedPath)) {
+            const rawContent = fs.readFileSync(preloadedPath, 'utf8');
+            const parsedRaw = JSON.parse(rawContent);
+            const wrappedData = mapping.wrapper ? mapping.wrapper(parsedRaw) : parsedRaw;
+            
+            // Populate standard cache
+            this.set(key, wrappedData);
+            return wrappedData as T;
+          }
+        }
         return null;
       }
       return parsed.data as T;

@@ -10,6 +10,7 @@ interface PropertySidebarProps {
   selectedProperty: Property | null;
   onSelectProperty: (property: Property) => void;
   activeTrail?: Trail | null;
+  selectedTrail?: Trail | null;
   onSelectTrail?: (trail: Trail | null) => void;
   customAddress?: CustomAddressAnalysis;
   activeTab?: 'properties' | 'trails';
@@ -21,13 +22,38 @@ export default function PropertySidebar({
   trails = [],
   selectedProperty,
   onSelectProperty,
-  activeTrail = null,
+  activeTrail: propActiveTrail,
+  selectedTrail: propSelectedTrail,
   onSelectTrail = () => {},
   customAddress,
   activeTab,
   setActiveTab,
 }: PropertySidebarProps) {
-  const [internalTab, setInternalTab] = React.useState<'properties' | 'trails'>('properties');
+  // Support both activeTrail and selectedTrail prop names
+  const activeTrail = propActiveTrail !== undefined ? propActiveTrail : (propSelectedTrail ?? null);
+
+  // Tab management: default or surface the 'trails' tab when customAddress is present
+  const [internalTab, setInternalTab] = React.useState<'properties' | 'trails'>(() =>
+    customAddress ? 'trails' : 'properties'
+  );
+
+  // Sync internalTab when customAddress arrives or changes
+  const prevCustomAddressRef = React.useRef(customAddress);
+  React.useEffect(() => {
+    if (customAddress && customAddress !== prevCustomAddressRef.current) {
+      setInternalTab('trails');
+      if (setActiveTab) {
+        setActiveTab('trails');
+      }
+    } else if (!customAddress && prevCustomAddressRef.current) {
+      setInternalTab('properties');
+      if (setActiveTab) {
+        setActiveTab('properties');
+      }
+    }
+    prevCustomAddressRef.current = customAddress;
+  }, [customAddress, setActiveTab]);
+
   const currentTab = activeTab !== undefined ? activeTab : internalTab;
 
   const handleTabChange = (tab: 'properties' | 'trails') => {
@@ -76,7 +102,7 @@ export default function PropertySidebar({
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Custom Address Proximity Analysis Card */}
-        {customAddress && currentTab === 'properties' && (
+        {customAddress && (
           <div className="bg-gradient-to-br from-emerald-700 via-teal-800 to-slate-900 rounded-2xl shadow-xl p-5 text-white border border-emerald-450/40 relative overflow-hidden transition-all duration-300 hover:shadow-2xl hover:scale-[1.01]">
             <div className="absolute top-0 right-0 w-36 h-36 bg-emerald-400/10 rounded-full -mr-10 -mt-10 blur-2xl"></div>
 

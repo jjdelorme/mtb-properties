@@ -12,19 +12,48 @@ const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 describe('API Services & Cache', () => {
   const cacheDir = path.join(__dirname, '../../data/cache');
+  const testCacheKeys = [
+    `geocode_${Buffer.from('boulder, co').toString('hex')}`,
+    `geocode_${Buffer.from('1701 county road 317 (gothic road), crested butte, co 81224').toString('hex')}`,
+    'rentcast_40.0150_-105.2700',
+    'rentcast_39.7550_-105.2210',
+    'rentcast_38.5730_-109.5490',
+    'overpass_39.7150_-105.2090',
+    'overpass_0.0000_0.0000',
+  ];
+
+  const cleanTestCache = () => {
+    for (const key of testCacheKeys) {
+      const filePath = path.join(cacheDir, `${key}.json`);
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (err) {
+          console.debug(`Expected file absence on test teardown: ${filePath}`);
+        }
+      }
+    }
+    try {
+      if (fs.existsSync(cacheDir)) {
+        const files = fs.readdirSync(cacheDir);
+        for (const file of files) {
+          if (file.startsWith('rentcast_prop_')) {
+            fs.unlinkSync(path.join(cacheDir, file));
+          }
+        }
+      }
+    } catch (err) {
+      console.debug('Expected missing directory or files during teardown');
+    }
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    cacheService.clear();
+    cleanTestCache();
   });
 
   afterAll(() => {
-    // Clean up cache directory
-    try {
-      if (fs.existsSync(cacheDir)) {
-        fs.rmSync(cacheDir, { recursive: true, force: true });
-      }
-    } catch (_) {}
+    cleanTestCache();
   });
 
   describe('Geocoding Service & Parcel Pinpointing', () => {
@@ -263,6 +292,59 @@ describe('API Services & Cache', () => {
 
       const trails = await fetchOSMTrails(0.0, 0.0);
       expect(trails).toEqual([]);
+    });
+
+    it('should parse relations and extract member ways, avoiding duplicates and ignoring geometry-less members', async () => {
+      const mockOverpassResponse = {
+        elements: [
+          {
+            type: 'way',
+            id: 101,
+            tags: { name: 'Standalone Name', 'mtb:scale': '3' },
+            geometry: [ { lat: 39.7150, lon: -105.2090 }, { lat: 39.7151, lon: -105.2091 } ]
+          },
+          {
+            type: 'relation',
+            id: 201,
+            tags: { route: 'mtb', name: 'Relation Route', 'mtb:scale': '1' },
+            members: [
+              {
+                type: 'way',
+                ref: 101,
+                role: '',
+                geometry: [ { lat: 39.7150, lon: -105.2090 }, { lat: 39.7151, lon: -105.2091 } ]
+              },
+              {
+                type: 'way',
+                ref: 102,
+                role: '',
+                geometry: [ { lat: 39.7152, lon: -105.2092 }, { lat: 39.7153, lon: -105.2093 } ]
+              },
+              {
+                type: 'way',
+                ref: 103,
+                role: ''
+              }
+            ]
+          }
+        ]
+      };
+
+      mockedAxios.post.mockResolvedValueOnce({ data: mockOverpassResponse, status: 200 });
+
+      const trails = await fetchOSMTrails(39.7150, -105.2090);
+
+      expect(trails.length).toBe(2);
+      
+      const way101 = trails.find(t => t.id === 'way_101');
+      expect(way101).toBeDefined();
+      expect(way101?.name).toBe('Standalone Name');
+      expect(way101?.difficulty).toBe('advanced');
+
+      const way102 = trails.find(t => t.id === 'way_102');
+      expect(way102).toBeDefined();
+      expect(way102?.name).toBe('Relation Route');
+      expect(way102?.difficulty).toBe('intermediate');
     });
   });
 });

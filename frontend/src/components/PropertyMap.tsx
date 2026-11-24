@@ -28,12 +28,104 @@ export function formatPriceAbbreviation(price: number): string {
   return `$${formattedMillions}M`;
 }
 
-// Helper component to handle map viewport panning when center updates
-function ChangeView({ center }: { center: { latitude: number; longitude: number } }) {
+// Utility to calculate bounding box encompassing search location / customAddress and all trail coordinates
+export function calculateSearchBounds(
+  center: { latitude: number; longitude: number },
+  trails: Trail[],
+  customAddress?: CustomAddressAnalysis
+): L.LatLngBounds | null {
+  const points: [number, number][] = [];
+
+  if (customAddress && typeof customAddress.latitude === 'number' && typeof customAddress.longitude === 'number') {
+    points.push([customAddress.latitude, customAddress.longitude]);
+  }
+  if (center && typeof center.latitude === 'number' && typeof center.longitude === 'number') {
+    points.push([center.latitude, center.longitude]);
+  }
+
+  if (trails && trails.length > 0) {
+    for (const trail of trails) {
+      if (trail && trail.coordinates && Array.isArray(trail.coordinates)) {
+        for (const coord of trail.coordinates) {
+          if (coord && typeof coord.latitude === 'number' && typeof coord.longitude === 'number') {
+            points.push([coord.latitude, coord.longitude]);
+          }
+        }
+      }
+    }
+  }
+
+  if (points.length > 1) {
+    const bounds = L.latLngBounds(points);
+    if (bounds.isValid()) {
+      return bounds;
+    }
+  }
+  return null;
+}
+
+// Helper component to handle auto-bounds fitting on search results arrival and property focusing
+function MapViewportController({
+  center,
+  trails,
+  customAddress,
+  selectedProperty,
+  searchId,
+}: {
+  center: { latitude: number; longitude: number };
+  trails: Trail[];
+  customAddress?: CustomAddressAnalysis;
+  selectedProperty: Property | null;
+  searchId?: string | number;
+}) {
   const map = useMap();
-  useEffect(() => {
-    map.setView([center.latitude, center.longitude], map.getZoom());
-  }, [center, map]);
+  const lastSearchRef = React.useRef<any>(null);
+  const prevSelectedPropertyRef = React.useRef<Property | null>(null);
+  const prevCenterRef = React.useRef<{ latitude: number; longitude: number }>(center);
+
+  React.useEffect(() => {
+    // Determine if this is a new search result (via searchId or trails array reference)
+    const currentSearchTrigger = searchId !== undefined ? searchId : trails;
+    const isNewSearchResult = lastSearchRef.current !== currentSearchTrigger;
+
+    if (isNewSearchResult) {
+      lastSearchRef.current = currentSearchTrigger;
+      prevCenterRef.current = center;
+      prevSelectedPropertyRef.current = selectedProperty;
+
+      // Single-trigger auto-fit on search results arrival:
+      // Fit map bounds to encompass the searched location / customAddress marker and all returned trail coordinates
+      const bounds = calculateSearchBounds(center, trails, customAddress);
+      if (bounds) {
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+      } else {
+        const targetLat = customAddress ? customAddress.latitude : center.latitude;
+        const targetLon = customAddress ? customAddress.longitude : center.longitude;
+        map.setView([targetLat, targetLon], 13);
+      }
+      return;
+    }
+
+    // If not a new search result, handle property selection without fighting auto-fit
+    if (selectedProperty && selectedProperty !== prevSelectedPropertyRef.current) {
+      prevSelectedPropertyRef.current = selectedProperty;
+      prevCenterRef.current = { latitude: selectedProperty.latitude, longitude: selectedProperty.longitude };
+      map.setView([selectedProperty.latitude, selectedProperty.longitude], Math.max(map.getZoom(), 14));
+      return;
+    } else if (!selectedProperty && prevSelectedPropertyRef.current) {
+      prevSelectedPropertyRef.current = null;
+    }
+
+    // Manual center update fallback
+    const centerMoved =
+      center.latitude !== prevCenterRef.current.latitude ||
+      center.longitude !== prevCenterRef.current.longitude;
+    if (centerMoved) {
+      prevCenterRef.current = center;
+      map.setView([center.latitude, center.longitude], map.getZoom());
+    }
+  }, [searchId, trails, customAddress, center, selectedProperty, map]);
+
   return null;
 }
 
@@ -60,6 +152,8 @@ interface PropertyMapProps {
   customAddress?: CustomAddressAnalysis;
   selectedTrail?: Trail | null;
   onSelectTrail?: (trail: Trail | null) => void;
+  searchId?: string | number;
+  searchKey?: string | number;
 }
 
 export default function PropertyMap({
@@ -71,6 +165,8 @@ export default function PropertyMap({
   customAddress,
   selectedTrail: externalSelectedTrail,
   onSelectTrail: externalOnSelectTrail,
+  searchId,
+  searchKey,
 }: PropertyMapProps) {
   // Support both controlled and uncontrolled selectedTrail state
   const [internalSelectedTrail, setInternalSelectedTrail] = useState<Trail | null>(null);
@@ -134,7 +230,13 @@ export default function PropertyMap({
         scrollWheelZoom={true}
         className="w-full h-full z-0"
       >
-        <ChangeView center={center} />
+        <MapViewportController
+          center={center}
+          trails={trails}
+          customAddress={customAddress}
+          selectedProperty={selectedProperty}
+          searchId={searchId ?? searchKey}
+        />
         <FitTrailBounds trail={activeTrail} />
 
         <TileLayer

@@ -4,6 +4,7 @@ import { fetchRentCastListings } from '../services/rentCastService';
 import { fetchOSMTrails } from '../services/overpassService';
 import { calculateProximity, haversineDistanceMiles } from '../services/proximityService';
 import { cacheService } from '../services/cacheService';
+import { parseAddress } from '../services/addressParser';
 import { SearchResponse, CustomAddressAnalysis } from '../types';
 
 export async function searchController(req: Request, res: Response): Promise<void> {
@@ -57,17 +58,22 @@ export async function searchController(req: Request, res: Response): Promise<voi
     const searchCacheKey = `search_${searchType}_${Buffer.from(display_name.toLowerCase()).toString('hex')}`;
     const cachedResponse = cacheService.get<SearchResponse>(searchCacheKey);
     if (cachedResponse) {
-      res.status(200).json({
-        ...cachedResponse,
-        source: 'cache'
-      });
-      return;
+      // Invalidate stale cache entries: area searches should not have customAddress, and trails must not be empty
+      const isStale = (searchType === 'area' && cachedResponse.customAddress !== undefined) ||
+                      (!cachedResponse.trails || cachedResponse.trails.length === 0);
+      if (!isStale) {
+        res.status(200).json({
+          ...cachedResponse,
+          source: 'cache'
+        });
+        return;
+      }
     }
 
     // 4. Parallel fetch trails & listings around the exact coordinate location
     const [rentCastResult, trails] = await Promise.all([
       fetchRentCastListings(lookupLat, lookupLon, address),
-      fetchOSMTrails(lat, lon)
+      fetchOSMTrails(lat, lon, 8)
     ]);
 
     // 5. Calculate proximity metrics & sort surrounding properties
@@ -75,7 +81,12 @@ export async function searchController(req: Request, res: Response): Promise<voi
 
     // 6. Handle Custom Address analysis if requested or if query is a specific street address
     let customAddressAnalysis: CustomAddressAnalysis | undefined = undefined;
-    const isStreetAddress = searchType === 'address' || /^\d+[\w-]*\s+/.test(searchQuery) || /\([^)]+\)/.test(searchQuery) || matchType === 'exact';
+    const parsedAddress = parseAddress(searchQuery);
+    const hasStreetIndicator = /\b(?:st|street|rd|road|ave|avenue|dr|drive|ln|lane|blvd|boulevard|ct|court|way|pl|place|cir|circle|pkwy|parkway|trl|trail|loop|run|path|hwy|highway|route|rt|cswy|causeway|ter|terrace|aly|alley)\b/i.test(searchQuery);
+    const isStreetAddress = searchType === 'address' || 
+      /^\d+[\w-]*\s+/.test(searchQuery) || 
+      /\([^)]+\)/.test(searchQuery) || 
+      (matchType === 'exact' && (!!parsedAddress.houseNumber || hasStreetIndicator));
 
     if (isStreetAddress) {
       let minDistance = Infinity;

@@ -9,13 +9,35 @@ jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 describe('Server Endpoints', () => {
+  const cacheDir = path.resolve(__dirname, '../../data/cache');
+  const cleanTestCache = () => {
+    const keys = [
+      `geocode_${Buffer.from('boulder').toString('hex')}`,
+      `search_area_${Buffer.from('boulder, colorado, usa').toString('hex')}`,
+      `search_area_${Buffer.from('boulder, co').toString('hex')}`,
+      `search_area_${Buffer.from('golden, colorado, usa').toString('hex')}`,
+      `search_area_${Buffer.from('80401').toString('hex')}`,
+      `search_area_${Buffer.from('golden, co').toString('hex')}`,
+      'overpass_39.7555_-105.2211',
+      'overpass_40.0150_-105.2705',
+      'rentcast_40.0150_-105.2705',
+      'rentcast_39.7555_-105.2211'
+    ];
+    for (const key of keys) {
+      const f = path.join(cacheDir, `${key}.json`);
+      if (fs.existsSync(f)) {
+        try { fs.unlinkSync(f); } catch (err) { console.debug(`Expected file absence on test teardown: ${f}`); }
+      }
+    }
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
-    cacheService.clear();
+    cleanTestCache();
   });
 
   afterAll(() => {
-    cacheService.clear();
+    cleanTestCache();
   });
 
   describe('GET /api/search', () => {

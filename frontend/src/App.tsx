@@ -14,6 +14,7 @@ function App() {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [selectedTrail, setSelectedTrail] = useState<Trail | null>(null);
   const [searchType, setSearchType] = useState<'area' | 'address'>('area');
+  const [searchId, setSearchId] = useState<number>(0);
   const [mapCenter, setMapCenter] = useState<{ latitude: number; longitude: number }>({
     latitude: 39.7555,
     longitude: -105.2211, // Default Golden, CO
@@ -35,6 +36,7 @@ function App() {
       if (response.ok) {
         setResult(data);
         setMapCenter(data.center);
+        setSearchId((prev) => prev + 1);
       } else {
         setError(data.error || 'Something went wrong while fetching data.');
       }
@@ -183,6 +185,7 @@ function App() {
           properties={result.properties}
           trails={result.trails}
           selectedProperty={selectedProperty}
+          activeTrail={selectedTrail}
           selectedTrail={selectedTrail}
           onSelectProperty={handleSelectProperty}
           onSelectTrail={handleSelectTrail}
@@ -200,6 +203,7 @@ function App() {
             onSelectProperty={handleSelectProperty}
             onSelectTrail={handleSelectTrail}
             customAddress={result.customAddress}
+            searchId={searchId}
           />
         </div>
       </main>
